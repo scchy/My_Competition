@@ -1,7 +1,7 @@
 #! python 3.6
 # Author: Scc_hy 
 # Create date: 2020-05-25
-# Function: 乘用车细分市场销量预测  第一战
+# Function: 乘用车细分市场销量预测 
 
 __doc__ = '乘用车细分市场销量预测'
 
@@ -25,12 +25,11 @@ import copy
 base_root = r'E:\Competition\CFF2019_CAR_SALES'
 os.chdir(base_root)
 
-dt_names = [] # ['dt_sales', 'dt_search', 'dt_user']
-dt_sales = pd.read_csv('train_sales_data.csv', encoding = 'utf8')
-dt_search = pd.read_csv('train_search_data.csv', encoding = 'utf8')
-dt_user = pd.read_csv('train_user_reply_data.csv', encoding = 'utf8')
-pred_dt = pd.read_csv('evaluation_public.csv', encoding = 'utf8')
-pred_dt.columns = ['id', 'province', 'adcode', 'model', 'regYear', 'regMonth',  'salesVolume']
+pre_train_sale = pd.read_csv(r'.\dataset\初赛\train_sales_data.csv')
+input_data  = pd.read_csv(r'.\dataset\复赛\train_sales_data.csv')
+final_data  = pd.read_csv(r'.\dataset\复赛\evaluation_public.csv')
+search_data = pd.read_csv(r'.\dataset\复赛\train_search_data.csv')
+
 
 
 
@@ -42,7 +41,7 @@ pred_dt.columns = ['id', 'province', 'adcode', 'model', 'regYear', 'regMonth',  
 from pyecharts.charts import Map
 import pyecharts.options as opts
 # 沿海地带偏高
-locl_sale = dt_sales.groupby('province', as_index=False)['salesVolume'].agg({'sale_sum':'sum'})
+locl_sale = input_data.groupby('province', as_index=False)['salesVolume'].agg({'sale_sum':'sum'})
 c = (
     Map()
     .add('地市销量', [list(z) for z in zip(locl_sale.province 
@@ -58,7 +57,7 @@ c = (
 c.render("locl_sale.html")
 
 
-dt_df = dt_sales.groupby(['regYear','regMonth'], as_index=False)['salesVolume'].agg({'sale_sum':'sum'})
+dt_df = input_data.groupby(['regYear','regMonth'], as_index=False)['salesVolume'].agg({'sale_sum':'sum'})
 
 sale_v = dt_df.loc[dt_df.regYear == 2016, 'sale_sum']
 mon_v = dt_df.loc[dt_df.regYear == 2016, 'regMonth']
