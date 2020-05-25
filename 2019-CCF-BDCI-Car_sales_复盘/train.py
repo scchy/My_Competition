@@ -221,4 +221,14 @@ def get_stat_feature(df_, month):
         stat_feat.append('last_{0}_popularity_ratio_model_last_{0}_popularity_sum'.format(i,i))  
     
     # body month 增长率 popularitydemo4
+    for i in range(1, 7):
+        last_time='last_{0}_popularity'.format(i)
+        pivot = data.groupby( ['time_id','body_id'], as_index=False)[last_time].agg({f'body_last_{i}_popularity_sum': 'sum'})
+        data  = pd.merge(data,pivot,on=['time_id','body_id'],how='left')
+        data['last_{0}_popularity_ratio_body_last_{0}_popularity_sum'.format(i,i)]=list(map(lambda x,y:x/y if y!=0 else 0,data[last_time],data['body_last_{0}_popularity_sum'.format(i)]))
+        if i>=2:
+            data['last_{0}_{1}_popularity_body_diff'.format(i-1,i)] = (data['last_{0}_popularity_ratio_body_last_{0}_popularity_sum'.format(i-1)]-data['last_{0}_popularity_ratio_body_last_{0}_popularity_sum'.format(i)])/data['last_{0}_popularity_ratio_body_last_{0}_popularity_sum'.format(i)]
+            stat_feat.append('last_{0}_{1}_popularity_body_diff'.format(i-1,i)) 
+    
+    # 同比一年前的增长
     
