@@ -3,9 +3,16 @@
 简单来说，本次赛题给出2016.1——2017.12的省份，车型，车身，销量，搜索量，评论量，评价量等，要求预测2018.1——2018.4的销量  
 
 
+
 结合冠军方案复盘：  
 冠军方案连接：[https://github.com/cxq80803716/2019-CCF-BDCI-Car_sales](https://github.com/cxq80803716/2019-CCF-BDCI-Car_sales)  
 冠军方案详解：[开源！2019CCF BDCI 乘用车销量预测 冠军方案](https://mp.weixin.qq.com/s/z71__Wrjd9jCuzZpnjRWjg)  
+
+
+主要模型思路：
+
+
+主要特征
 
 
 2020.05.25
