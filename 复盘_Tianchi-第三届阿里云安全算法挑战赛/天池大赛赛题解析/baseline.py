@@ -116,9 +116,29 @@ for fold_, (tr_idx, val_idx) in enumerate(folds.split(train_data)):
     models.append(clf)
     
 
-### 
+### 特征重要性分析
+fea_importance = pd.DataFrame(
+    'fea_name' : train_features,
+    'fea_imp' : clf.feature_importance()
+)
+fea_importance = fea_importance.sort_values('fea_imp', ascending=False)
+
+plt.figure(figsize=(20,10))
+sns.barplot(x=fea_importance['fea_name'], y=fea_importance['fea_imp'])
+plt.xticks(rotation=75)
+plt.show()
 
 
+## 提交
+for modeli in models:
+predict_res +=  modeli.predict(test_data[train_features])/ 5
+
+
+for i in range(8):
+    test_data[f'prob{i}']=0
+
+test_data.loc[:, [f'prob{i}' for i in range(8)]]=predict_res
+test_data.loc[:, ['file_id'] + [f'prob{i}' for i in range(8)]].to_csv('baseline.csv', index=None)
 
 
 
