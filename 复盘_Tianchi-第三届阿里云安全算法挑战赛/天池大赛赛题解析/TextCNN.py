@@ -54,6 +54,7 @@ test_df.loc[:, 'seq'] = get_sequenc(test_df, test_period_idx)
 # ---------------------------
 from tensorflow.keras.layers import Embedding, Dense, Input, SpatialDropout1D, Conv1D, GlobalMaxPooling1D
 from tensorflow.keras.layers import concatenate, Dropout
+from tensorflow.kears import Model
 
 def TextCNN(max_len, max_cnt, embed_size, num_filters, kernel_size, conv_action, mask_zero):
     _input = Input(shape=(max_len,). dtype='int32')
