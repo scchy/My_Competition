@@ -2,6 +2,7 @@
 # Create date: 2020-12-26
 # Author: Scc_hy
 # reference: 《阿里云天池大赛赛题解析》第四章 阿里云安全恶意程序检测
+# func: baseline-1.087292
 
 
 import pandas as pd
@@ -139,17 +140,3 @@ for i in range(8):
 
 test_data.loc[:, [f'prob{i}' for i in range(8)]]=predict_res
 test_data.loc[:, ['file_id'] + [f'prob{i}' for i in range(8)]].to_csv('baseline.csv', index=None)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
