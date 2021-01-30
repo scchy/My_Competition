@@ -61,11 +61,45 @@ def get_mdl(x, y):
     return m.fit(x_nb, y), r
 
 
-
+def nblrTrain(tr_tfidf_rlt, te_tfidf_rlt, train):
+    label_fold = []
+    preds_fold_lr=[]
+    lr_oof=pd.DataFrame()
+    preds_te=[]
+    for fold_i, (tr_idx, val_idx) in enumerate(skf.split(train, train['label'])):
+        if fold_i >= 0:
+            tr, val = train.iloc[tr_idx], train.iloc[te_idx]
+            x = tr_tfidf_rlt[tr_idx, :]
+            text_x = tr_tfidf_rlt[te_idx, :]
+            preds = np.zeros((len(val), OVR_CLASS_NUM))
+            preds_te_i = np.zeros((te_tfidf_rlt.shape[0],OVR_CLASS_NUM))
+            labels = list(range(OVR_CLASS_NUM))
+            for i, j in enumerate(labels):
+                print('fit', j)
+                m, r = get_mdl(x, tr['label'] == j)
+                preds[:, i] = m.predict_proba(text_x.multiply(r))[:, 1]     
+                preds_te_i[:, i] = m.predict_proba(te_tfidf_rlt.multiply(r))[:, 1]   
     
 
 
-    
+
+def xgbMultiTrain(X_train, X_val, y_train, y_val, test, num_round):
+
+    # multi-cls model
+    dtrain = xgb.DMatrix(X_train, y_train)      
+    dval = xgb.DMatrix(X_val, y_val)    
+    dtest = xgb.DMatrix(test.drop(['file_id'], axis=1))
+    watchlist = [(dtrain, 'train'), (dval, 'val')]
+    model = xgb.train(xgb_params_multi,
+                      dtrain, 
+                      num_round, 
+                      evals=watchlist, 
+                      early_stopping_rounds=100,
+                      verbose_eval=100
+                     )
+    p_val = pd.DataFrame(model.predict(dval, ntree_limit=model.best_iteration), index=X_val.index)  
+    p_test = pd.DataFrame(model.predict(dtest, ntree_limit=model.best_iteration), index=test.index)
+    return (model, p_val, p_test)
     
 
 
