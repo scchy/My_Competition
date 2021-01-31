@@ -62,8 +62,6 @@ def get_mdl(x, y):
 
 
 def nblrTrain(tr_tfidf_rlt, te_tfidf_rlt, train):
-    label_fold = []
-    preds_fold_lr=[]
     lr_oof=pd.DataFrame()
     preds_te = np.zeros((te_tfidf_rlt.shape[0],OVR_CLASS_NUM))
     for fold_i, (tr_idx, val_idx) in enumerate(skf.split(train, train['label'])):
@@ -88,13 +86,6 @@ def nblrTrain(tr_tfidf_rlt, te_tfidf_rlt, train):
             lr_oof_i[f'prob_{i}'] = preds[:, i]
         # oof-predict 汇总
         lr_oof = pd.concat([lr_oof, lr_oof_i], axis=0)
-
-        for i, j in enumerate(preds_lr):
-            # 归一化
-            preds_lr[i] = j/sum(j) 
-
-        label_fold.append(val['label'].tolist())
-        preds_fold_lr.append(preds_lr)
 
     lr_oof = lr_oof.sort_values('file_id')
     preds_te_avg = preds_te / 5
