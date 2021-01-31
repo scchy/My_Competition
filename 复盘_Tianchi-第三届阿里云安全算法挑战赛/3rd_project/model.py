@@ -79,6 +79,26 @@ def nblrTrain(tr_tfidf_rlt, te_tfidf_rlt, train):
                 m, r = get_mdl(x, tr['label'] == j)
                 preds[:, i] = m.predict_proba(text_x.multiply(r))[:, 1]     
                 preds_te_i[:, i] = m.predict_proba(te_tfidf_rlt.multiply(r))[:, 1]   
+        preds_te.append(preds_te_i)
+        preds_lr = preds
+        lr_oof_i = pd.DataFrame({'file_id':val['file_id']})
+        for i in range(OVR_CLASS_NUM):
+            lr_oof_i[f'prob_{i}'] = preds[:, i]
+        lr_oof = pd.concat([lr_oof, lr_oof_i], axis=0)
+
+        for i, j in enumerate(preds_lr):
+            preds_lr[i] = j/sum(j)
+
+        label_fold.append(val['label'].tolist())
+        preds_fold_lr.append(preds_lr)
+
+        lr_oof = lr_oof.sort_values('file_id')
+        preds_te_avg = (np.sum(np.array(preds_te), axis=0) / 5)
+        lr_oof_te = pd.DataFrame({'file_id':range(te_tfidf_rlt.shape[0])})
+        for i in range(OVR_CLASS_NUM):
+            lr_oof_te[f'prob_{i}'] = preds_te_avg[:, i]
+
+    return lr_oof, lr_oof_te
     
 
 
