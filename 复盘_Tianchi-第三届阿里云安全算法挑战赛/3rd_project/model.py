@@ -5,8 +5,8 @@
 
 __doc__ = """
 
-数据 --> tf-idf特征 --> OVR-NBLR模型 -->   MULTI-XGBCLF  --> 输出
-    -->  统计特征   ---->  ---->   ---->   MULTI-XGBCLF
+数据 --> tf-idf特征 --> OVR-NBLR模型 -->   -|
+    -->  统计特征   ---->  ---->   ---->  5fold-ensemble MULTI-XGBCLF  --> 输出
 
 """
 
