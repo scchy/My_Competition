@@ -3,6 +3,13 @@
 # Func: 阿里云安全算法挑战赛第三名方案-model
 # reference： https://github.com/DeanNg/3rd_security_competition/blob/master/final_code/security_3rd_model.py
 
+__doc__ = """
+
+数据 --> tf-idf特征 --> OVR-NBLR模型 -->   MULTI-XGBCLF  --> 输出
+    -->  统计特征   ---->  ---->   ---->   MULTI-XGBCLF
+
+"""
+
 import numpy as np
 import pandas as pd
 import xgboost as xgb
