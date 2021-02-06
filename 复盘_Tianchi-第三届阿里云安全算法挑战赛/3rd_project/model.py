@@ -69,6 +69,9 @@ def get_mdl(x, y):
 
 
 def nblrTrain(tr_tfidf_rlt, te_tfidf_rlt, train):
+    """
+    train ->  data[['file_id', 'label']].drop_duplicates() 主要作用是label
+    """
     lr_oof=pd.DataFrame()
     preds_te = np.zeros((te_tfidf_rlt.shape[0],OVR_CLASS_NUM))
     for fold_i, (tr_idx, val_idx) in enumerate(skf.split(train, train['label'])):
