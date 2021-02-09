@@ -15,3 +15,18 @@
 > - 共享单车订单数据
 1. 识别出工作日早高峰7-9点潮汐现象最突出的40个区域  
 2. 针对TOP40区域计算结果进一步设计高峰期共享单车潮汐点优化方案  
+
+
+## 运用工具
+folium
+```python
+m = folium.Map(
+    location=[24.482426, 118.157606], zoom_start=12
+)
+my_PloyLine = folium.PloyLine(
+    locations=bike_order.loc[bike_order['BICYCLE_ID'] == '000152773681a23a7f2d9af8e8902703',
+                             ['LATITUDE', 'LONGITUDE']].values,
+    weights=5
+)
+m.add_children(my_PloyLine)
+```
