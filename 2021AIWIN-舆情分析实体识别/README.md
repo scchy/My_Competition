@@ -10,3 +10,5 @@
 ## 模型融合
 - 融合1：linear_t预测为3，6 + 0.27 * linear_t + 0.73 * linear_t 模型
 - 融合2：融合1预测为10的样本再用lgb预测分为2类
+  
+![perf_png](./src/model_perf.jpg)
