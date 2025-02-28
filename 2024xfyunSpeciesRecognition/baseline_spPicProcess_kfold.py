@@ -8,29 +8,20 @@ import torch
 from torch import nn 
 import numpy as np
 from datetime import datetime
-from torchvision.models.efficientnet import efficientnet_v2_s, efficientnet_v2_m
+from torchvision.models.efficientnet import efficientnet_v2_s #, efficientnet_v2 _m
 from torch.utils.data import DataLoader, random_split
 import pandas as pd
 from argparse import Namespace
 from tqdm.auto import tqdm
 from PIL import Image
-from trainUtils import all_seed, cuda_mem, trainer, base_config
-from dataUtils import speciesRecDataSet, idx2sp
+from trainUtils import all_seed, cuda_mem, resplit_trainer, base_config
+from dataUtils import speciesRecDataSet, idx2sp, test_sp_tfm, train_sp_tfm, train_sp_simple_tfm
 import torchvision.transforms as transforms
 from torchvision.transforms import functional as F
 import cv2
 
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = '/usr/lib/x86_64-linux-gnu/qt5/plugins'
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com' 
-
-
-# 应用双边滤波双边滤波（Bilateral Filter）：
-# 双边滤波是一种边缘保持滤波器，它在去除噪声的同时能够保留边缘信息。 
-# 参数9表示半尺寸的直径，75是滤波器的强度，较高的值表示更强的滤波
-# bilateral_image = cv2.bilateralFilter(image, 9, 75, 75) 图像前景较多
-
-def bilateral_change(img):
-    return Image.fromarray(cv2.bilateralFilter(np.array(img), 9, 75, 75))
 
 
 def luv(image):
@@ -47,78 +38,53 @@ def luv(image):
     return  np.transpose(np.concatenate([L_normalized, U_normalized, V_normalized], axis=-1), (2, 0, 1)).astype(np.float32)
 
 
-test_sp_tfm = transforms.Compose([
-    transforms.Lambda(bilateral_change),
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
-    # transforms.Lambda(luv)
-])
-
-train_sp_tfm = transforms.Compose([
-    transforms.Lambda(bilateral_change),
-    transforms.Resize((224, 224)),
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomVerticalFlip(),
-    transforms.ColorJitter(brightness=.5, hue=.3),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
-    # transforms.Lambda(luv)
-])
-
-
 
 base_config = Namespace(
     device='cuda',
     train_data_dir='/home/scc/sccWork/myGitHub/My_Competition/2024xfyunSpeciesRecognition/data/train',
     test_data_dir='/home/scc/sccWork/myGitHub/My_Competition/2024xfyunSpeciesRecognition/data/testA',
-    save_path="./models/xf_baseline_spProcess2.ckpt",
+    save_path="./models/xf_baseline_spProcess2_kflod.ckpt",
     learning_rate=7.5e-3,
-    batch_size=32,
-    n_epochs=100,
+    batch_size=64,
+    n_epochs=180,
     clip_flag=True,
     clip_max_norm=10,
     learning_rate_decrease_patient=2,
     learning_rate_decrease_factor=0.85,
     early_stop=30,
     seed=202407,
-    continue_flag=False
+    continue_flag=True
 )
 
 
 cuda_mem()
 all_seed(base_config.seed)
-base_model = efficientnet_v2_m(num_classes=len(idx2sp))
+base_model = efficientnet_v2_s(num_classes=len(idx2sp))
 if base_config.continue_flag:
     base_model.load_state_dict(torch.load(base_config.save_path))
     base_config.learning_rate = base_config.learning_rate / 5
     base_config.save_path = base_config.save_path.replace('.ckpt', '_continue.ckpt')
     print(base_config.save_path, base_config.learning_rate)
 
-tt_dataset = speciesRecDataSet(base_config.train_data_dir, train_sp_tfm, data_type='train')
+tt_dataset = speciesRecDataSet(base_config.train_data_dir, train_sp_tfm, data_type='train', tfm_extra=train_sp_simple_tfm)
 print(tt_dataset[0][0].shape, tt_dataset[2][0].shape)
 
 # split
-train_size = int(0.8 * len(tt_dataset))
-val_size = len(tt_dataset) - train_size
-train_dataset, val_dataset = random_split(tt_dataset, [train_size, val_size])
-tr_loader = DataLoader(train_dataset, batch_size=base_config.batch_size, shuffle=True, num_workers=10)
-val_loader = DataLoader(val_dataset, batch_size=base_config.batch_size, shuffle=True, num_workers=10)
-trainer(tr_loader, val_loader, base_model, base_config, wandb_flag=True)
+resplit_trainer(tt_dataset, base_model, base_config, test_ratio=0.2, save_epoch_freq=10, wandb_flag=True)
 
 # ----------------------------------------------------------------------------------------
 # inference
-best_model = efficientnet_v2_m(num_classes=len(idx2sp))
+best_model = efficientnet_v2_s(num_classes=len(idx2sp))
 best_model.load_state_dict(torch.load(base_config.save_path))
 best_model.eval()
 test_dataset = speciesRecDataSet(base_config.test_data_dir, test_sp_tfm, data_type='test')
 te_loader = DataLoader(test_dataset, batch_size=base_config.batch_size, shuffle=False)
 
-test_dataset = speciesRecDataSet(base_config.test_data_dir, train_sp_tfm, data_type='test')
+test_dataset = speciesRecDataSet(base_config.test_data_dir, train_sp_tfm, data_type='test', tfm_extra=train_sp_simple_tfm)
 te_loader_extra1  = DataLoader(test_dataset, batch_size=base_config.batch_size, shuffle=False, num_workers=10)
-test_dataset = speciesRecDataSet(base_config.test_data_dir, train_sp_tfm, data_type='test')
+test_dataset = speciesRecDataSet(base_config.test_data_dir, train_sp_tfm, data_type='test', tfm_extra=train_sp_simple_tfm)
 te_loader_extra2  = DataLoader(test_dataset, batch_size=base_config.batch_size, shuffle=False, num_workers=10)
-test_dataset = speciesRecDataSet(base_config.test_data_dir, train_sp_tfm, data_type='test')
+test_dataset = speciesRecDataSet(base_config.test_data_dir, train_sp_tfm, data_type='test', tfm_extra=train_sp_simple_tfm)
 te_loader_extra3 = DataLoader(test_dataset, batch_size=base_config.batch_size, shuffle=False, num_workers=10)
 test_loaders = [te_loader_extra1, te_loader_extra2, te_loader_extra3, te_loader]
 
@@ -159,5 +125,5 @@ sub_df = pd.DataFrame({
     "label": [idx2sp[i] for i in  soft_vote_prediction]
 })
 now_ = datetime.now().strftime('%Y%m%d__%H%M')
-sub_df.to_csv(f'./models/submit_spProcess2_{now_}.csv', index=False, encoding='utf-8')
+sub_df.to_csv(f'./models/submit_spProcess_kflod_{now_}.csv', index=False, encoding='utf-8')
 

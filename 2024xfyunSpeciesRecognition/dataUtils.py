@@ -10,8 +10,8 @@ import os
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt 
-
-
+import cv2
+print(f"{cv2.__version__=}")
 
 sp2idx = {
     'RedFox': 0,
@@ -82,6 +82,46 @@ test_add_norm_tfm = transforms.Compose([
         )
 ])
 
+# ---------------- spPicProcess
+# 应用双边滤波双边滤波（Bilateral Filter）：
+# 双边滤波是一种边缘保持滤波器，它在去除噪声的同时能够保留边缘信息。 
+# 参数9表示半尺寸的直径，75是滤波器的强度，较高的值表示更强的滤波
+# bilateral_image = cv2.bilateralFilter(image, 9, 75, 75) 图像前景较多
+def bilateral_change(img):
+    return Image.fromarray(cv2.bilateralFilter(np.array(img), 9, 75, 75))
+
+
+test_sp_tfm = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.Lambda(bilateral_change),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
+])
+
+train_sp_tfm = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.Lambda(bilateral_change),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomVerticalFlip(),
+    transforms.ColorJitter(brightness=.5, hue=.3),
+    transforms.AutoAugment(transforms.AutoAugmentPolicy.IMAGENET),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
+])
+
+train_sp_simple_tfm = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.Lambda(bilateral_change),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomVerticalFlip(),
+    transforms.ColorJitter(brightness=.5, hue=.3),
+    transforms.ToTensor(),
+    transforms.Normalize(                 # 标准化
+            mean=[0.485, 0.456, 0.406],      # ImageNet数据集的均值
+            std=[0.229, 0.224, 0.225]        # ImageNet数据集的标准差
+        )
+])
+
 
 
 class speciesRecDataSet(Dataset):
@@ -91,6 +131,7 @@ class speciesRecDataSet(Dataset):
                  data_type:AnyStr = 'train', 
                  files: List=None, 
                  tfm_extra=None,
+                 extra_files=None,
                  **kwargs
                  ):
         super(speciesRecDataSet).__init__()
@@ -99,8 +140,12 @@ class speciesRecDataSet(Dataset):
             self.files = self.load_train_path()
         else:
             self.files = self.load_test_path()
-        if files != None:
+        if files is not None:
             self.files = files
+        
+        if extra_files is not None:
+            self.files += extra_files
+
         print(f"One {data_dir} sample", self.files[0])
         self.transform = tfm
         self.transform_extra = tfm_extra

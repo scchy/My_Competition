@@ -17,3 +17,16 @@ unzip train.zip
 unzip testA.zip
 ```
 
+## train
+
+1. √ baseline 
+2. √ analize
+   1. √ which special predict worst
+   2. √ try: picture processing 
+   3. explain: saliency_maps -- something error
+3. √ picProcess -> baseline_spPicProcess
+   1. √ add train all data with every 25 epoch resplit data (Not Work)
+   2. night picture process & aug
+4. upsample: add worst predicted pic to train data again
+5. best Predict pic crop -> data aug
+

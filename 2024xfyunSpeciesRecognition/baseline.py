@@ -8,27 +8,35 @@ import torch
 from torch import nn 
 import numpy as np
 from datetime import datetime
-from torchvision.models.efficientnet import efficientnet_v2_s 
+from torchvision.models.efficientnet import efficientnet_v2_s, efficientnet_v2_s
 from torch.utils.data import DataLoader, random_split
 import pandas as pd
 from argparse import Namespace
 from tqdm.auto import tqdm
 from trainUtils import all_seed, cuda_mem, trainer, base_config
-from dataUtils import speciesRecDataSet, train_tfm, test_tfm, idx2sp, train_add_norm_tfm, test_add_norm_tfm, train_add_norm_simple_tfm
+from dataUtils import (
+    speciesRecDataSet, train_tfm, test_tfm, idx2sp, 
+    train_add_norm_tfm, test_add_norm_tfm, train_add_norm_simple_tfm,
+    train_sp_tfm, train_sp_simple_tfm, test_sp_tfm
+)
+
+import pickle 
+with open('/home/scc/sccWork/myGitHub/My_Competition/models/diff_pics.pkl', 'rb') as f:
+    difficult_pic = pickle.load(f)
 
 
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com' 
 base_config = Namespace(
     device='cuda',
     train_data_dir='/home/scc/sccWork/myGitHub/My_Competition/2024xfyunSpeciesRecognition/data/train',
-    test_data_dir='/home/scc/sccWork/myGitHub/My_Competition/2024xfyunSpeciesRecognition/data/testA',
+    test_data_dir='/home/scc/sccWork/myGitHub/My_Competition/2024xfyunSpeciesRecognition/data/testB',
     # save_path="./models/xf_baseline.ckpt",
     save_path="./models/xf_baseline_norm.ckpt",
     # save_path="./models/xf_baseline_norm_continue.ckpt",
     learning_rate=5.5e-3,
     # batch_size=128,
-    batch_size=64,
-    n_epochs=100,
+    batch_size=64, #64,
+    n_epochs=60,
     clip_flag=True,
     clip_max_norm=10,
     learning_rate_decrease_patient=2,
@@ -43,12 +51,19 @@ cuda_mem()
 all_seed(base_config.seed)
 base_model = efficientnet_v2_s(num_classes=len(idx2sp))
 if base_config.continue_flag:
+    # p_ = base_config.save_path.replace('.ckpt', '_continue2.ckpt') 
+    # print(p_)
+    # base_model.load_state_dict(torch.load(p_))
     base_model.load_state_dict(torch.load(base_config.save_path))
-    base_config.learning_rate = base_config.learning_rate / 5
-    base_config.save_path = base_config.save_path.replace('.ckpt', '_continue.ckpt')
+    base_config.learning_rate = base_config.learning_rate / 1.2
+    base_config.save_path = base_config.save_path.replace('.ckpt', '_continue2.ckpt')
     print(base_config.save_path, base_config.learning_rate)
 
-tt_dataset = speciesRecDataSet(base_config.train_data_dir, train_add_norm_tfm, data_type='train', tfm_extra=train_add_norm_simple_tfm)
+tt_dataset = speciesRecDataSet(
+    base_config.train_data_dir, train_add_norm_tfm, 
+    data_type='train', tfm_extra=train_add_norm_simple_tfm,
+    extra_files=difficult_pic*25
+)
 # split
 train_size = int(0.8 * len(tt_dataset))
 val_size = len(tt_dataset) - train_size
@@ -71,7 +86,12 @@ test_dataset = speciesRecDataSet(base_config.test_data_dir, train_add_norm_tfm, 
 te_loader_extra2  = DataLoader(test_dataset, batch_size=base_config.batch_size, shuffle=False, num_workers=10)
 test_dataset = speciesRecDataSet(base_config.test_data_dir, train_add_norm_tfm, data_type='test', tfm_extra=train_add_norm_simple_tfm)
 te_loader_extra3 = DataLoader(test_dataset, batch_size=base_config.batch_size, shuffle=False, num_workers=10)
-test_loaders = [te_loader_extra1, te_loader_extra2, te_loader_extra3, te_loader]
+
+test_dataset = speciesRecDataSet(base_config.test_data_dir, train_sp_tfm, data_type='test', tfm_extra=train_sp_simple_tfm)
+te_loader_extra4 = DataLoader(test_dataset, batch_size=base_config.batch_size, shuffle=False, num_workers=10)
+test_dataset = speciesRecDataSet(base_config.test_data_dir, test_sp_tfm, data_type='test')
+te_loader_extra5 = DataLoader(test_dataset, batch_size=base_config.batch_size, shuffle=False, num_workers=10)
+test_loaders = [te_loader_extra1, te_loader_extra2, te_loader_extra3, te_loader_extra4, te_loader_extra5, te_loader]
 
 device = base_config.device
 best_model.to(device)
@@ -107,7 +127,7 @@ for pred_arr_t in loader_pred_list:
     pred_arr += pred_arr_t
 
 
-soft_vote_prediction = np.argmax(0.5 * pred_arr / len(loader_pred_list) + 0.5 * loader_pred_list[-1], axis=1)
+soft_vote_prediction = np.argmax(0.75 * pred_arr / len(loader_pred_list) + 0.25 * loader_pred_list[-1], axis=1)
 
 
 # uuid,label
@@ -116,5 +136,6 @@ sub_df = pd.DataFrame({
     "label": [idx2sp[i] for i in  soft_vote_prediction]
 })
 now_ = datetime.now().strftime('%Y%m%d__%H%M')
-sub_df.to_csv(f'./models/submit_{now_}.csv', index=False, encoding='utf-8')
-
+# sub_df.to_csv(f'./models/submit_{now_}.csv', index=False, encoding='utf-8')
+# sub_df.to_csv(f'./models/bs_m_submit_{now_}.csv', index=False, encoding='utf-8')
+sub_df.to_csv(f'./models/bs_m_submit_{now_}_testB.csv', index=False, encoding='utf-8')

@@ -1,0 +1,4 @@
+[ 2024-08-20 17:10:21.408429 ]-[ GPU0: NVIDIA GeForce RTX 4070 Ti    总共显存: 12.0G    空余显存: 11.4G    模型使用显存: 0.602G(616MiB)
+info.used=646709248
+Set env random_seed = 202407
+./models/xf_baseline_norm_continue2.ckpt

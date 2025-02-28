@@ -2,3 +2,8 @@
 models
 wandb
 */__pycache__
+NeurIPS2024_LuxAISeason_3/Lux-Design-S3
+NeurIPS2024_LuxAISeason_3/episodes
+NeurIPS2024_LuxAISeason_3/test_models
+NeurIPS2024_LuxAISeason_3/*.log
+NeurIPS2024_LuxAISeason_3/*.html
